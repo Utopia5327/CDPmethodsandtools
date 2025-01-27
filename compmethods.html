@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computational Methods and Tools</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        body, html {
+            overflow: hidden; /* Remove scrollbars */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .node circle {
+            stroke-width: 2;
+        }
+
+        .node text {
+            font-size: 12px;
+            fill: white;
+        }
+
+        .link {
+            fill: none;
+            stroke-width: 2px;
+            stroke-dasharray: 4; /* Make lines dotted */
+        }
+    </style>
+</head>
+<body>
+    <!-- <h1>Computational Methods and Tools</h1> -->
+    <svg id="tree" width="100%" height="100%"></svg>
+
+    <script>
+        const data = {
+            name: "Computational Methods",
+            children: [
+                {
+                    name: "Design Computation",
+                    children: [
+                        { 
+                            name: "Methods",
+                            children: [
+                                { name: "Computational geometry" },
+                                { name: "Computational modeling and analysis" },
+                                { name: "Generative Design" },
+                                { name: "Parametric modeling" },
+                                { name: "Building information modeling (BIM)" }
+                            ]
+                        },
+                        { 
+                            name: "Tools",
+                            children: [
+                                { name: "Rhino" },
+                                { name: "Grasshopper" },
+                                { name: "Python" },
+                                { name: "Revit" },
+                                { name: "Rhino.Inside" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Visualization",
+                    children: [
+                        { 
+                            name: "Methods",
+                            children: [
+                                { name: "Rendering" },
+                                { name: "Walkthrough Animation" },
+                                { name: "Illustrations" },
+                                { name: "Photomanipulation" },
+                                { name: "Graphic Design" }
+                            ]
+                        },
+                        { 
+                            name: "Tools",
+                            children: [
+                                { name: "Lumion" },
+                                { name: "Enscape" },
+                                { name: "Twinmotion" },
+                                { name: "Blender" },
+                                { name: "Adobe Photoshop" },
+                                { name: "Adobe Premiere Pro" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Artificial Intelligence",
+                    children: [
+                        { 
+                            name: "Methods",
+                            children: [
+                                { name: "Generative AI (Visual + LLMs)" },
+                                { name: "AI rendering" },
+                                { name: "Computer Vision" },
+                                { name: "Code generation" },
+                                { name: "Machine learning" }
+                            ]
+                        },
+                        { 
+                            name: "Tools",
+                            children: [
+                                { name: "MidJourney" },
+                                { name: "Stable Diffusion" },
+                                { name: "RunwayML" },
+                                { name: "Pytorch" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Spatial Analysis",
+                    children: [
+                        { 
+                            name: "Methods",
+                            children: [
+                                { name: "Geographic Information System (GIS)" },
+                                { name: "Raster and Vector based analysis" },
+                                { name: "Static and Interactive-Web Mapping" },
+                                { name: "Data Visualization" }
+                            ]
+                        },
+                        { 
+                            name: "Tools",
+                            children: [
+                                { name: "QGIS" },
+                                { name: "Mapbox" },
+                                { name: "Kepler" },
+                                { name: "Chart.js" },
+                                { name: "R Studio" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Web 2",
+                    children: [
+                        { 
+                            name: "Methods",
+                            children: [
+                                { name: "Front End development" },
+                                { name: "Using APIs" },
+                                { name: "Data Visualization" }
+                            ]
+                        },
+                        { 
+                            name: "Tools",
+                            children: [
+                                { name: "Three.js" },
+                                { name: "Cursor AI" },
+                                { name: "VS Code" },
+                                { name: "GitHub" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const width = window.innerWidth; // Use full window width
+        const height = window.innerHeight; // Use full window height
+        const radius = Math.min(width, height) / 2 - 100; // Increase the radius for the radial layout
+
+        const svg = d3.select("#tree")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${width / 2},${height / 2})`); // Center the tree
+
+        const root = d3.hierarchy(data);
+
+        const clusterLayout = d3.cluster()
+            .size([2 * Math.PI, radius]); // Use a radial size
+
+        clusterLayout(root);
+
+        const radialPoint = (x, y, isTool) => {
+            const adjustedRadius = isTool ? y + 0 : y; // Further increase radius for tools
+            return [adjustedRadius * Math.cos(x -= Math.PI / 2), adjustedRadius * Math.sin(x)];
+        };
+
+        const colorScale = d3.scaleOrdinal(d3.schemePaired);
+
+        const links = svg.selectAll(".link")
+            .data(root.links())
+            .join("path")
+            .attr("class", "link")
+            .attr("d", d3.linkRadial()
+                .angle(d => d.x)
+                .radius(d => d.y)
+            )
+            .style("stroke", d => colorScale(d.source.depth)) // Color links based on source node depth
+            .style("opacity", 0); // Start with links hidden
+
+        const nodes = svg.selectAll(".node")
+            .data(root.descendants())
+            .join("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${radialPoint(d.x, d.y, d.data.name === "Tools")})`)
+            .style("opacity", 0); // Start with nodes hidden
+
+        nodes.append("circle")
+            .attr("r", 5)
+            .style("fill", d => colorScale(d.depth)); // Color nodes based on depth
+
+        nodes.append("text")
+            .attr("dy", -20)
+            .attr("x", 0)
+            .style("text-anchor", "middle")
+            .style("font-size", d => `${12 - d.depth * 1.5}px`)
+            .text(d => d.data.name);
+
+        // Animate nodes and links
+        nodes.transition()
+            .delay((d, i) => d.depth * 1500)
+            .duration(1500)
+            .style("opacity", 1)
+            .on("end", function(d) {
+                if (d.depth > 0) { // Apply to all nodes except the root
+                    d3.select(this).call(sway);
+                }
+            });
+
+        links.transition()
+            .delay((d, i) => (d.source.depth + 1) * 1500)
+            .duration(1500)
+            .style("opacity", 1);
+
+        // Function to make nodes sway
+        function sway(selection) {
+            selection.transition()
+                .duration(1000)
+                .attr("transform", d => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 5; // Sway radius
+                    const x = radialPoint(d.x, d.y, d.data.name === "Tools")[0] + Math.cos(angle) * radius;
+                    const y = radialPoint(d.x, d.y, d.data.name === "Tools")[1] + Math.sin(angle) * radius;
+                    return `translate(${x},${y})`;
+                })
+                .on("end", function() {
+                    d3.select(this).call(sway);
+                });
+        }
+
+        // Adjust the interconnections to reflect the new structure
+        setTimeout(() => {
+            const lineGenerator = d3.lineRadial()
+                .angle(d => d.x)
+                .radius(d => d.y)
+                .curve(d3.curveBundle.beta(0.85)); // Use curveBundle for organic lines
+
+            const adjustCurves = (methodChildren, toolChildren, yOffset) => {
+                methodChildren.forEach(method => {
+                    toolChildren.forEach(tool => {
+                        // Calculate a more distant midpoint for a larger curve
+                        const midX = (method.x + tool.x) / 2;
+                        const midY = (method.y + tool.y) / 2 + yOffset; // Increase the y-offset for a larger curve
+
+                        const pathData = lineGenerator([
+                            { x: method.x, y: method.y },
+                            { x: midX, y: midY }, // Adjusted midpoint
+                            { x: tool.x, y: tool.y }
+                        ]);
+
+                        svg.append("path")
+                            .attr("class", "link")
+                            .attr("d", pathData)
+                            .style("stroke", "#e0e0e0") // Lighten the color for interconnections
+                            .style("opacity", 0.2) // Reduce opacity for lighter appearance
+                            .style("stroke-width", 1)
+                            .style("stroke-dasharray", 1);
+                    });
+                });
+            };
+
+            const designComputationNode = root.descendants().find(d => d.data.name === "Design Computation");
+            adjustCurves(designComputationNode.children[0].children, designComputationNode.children[1].children, 100);
+
+            const visualizationNode = root.descendants().find(d => d.data.name === "Visualization");
+            adjustCurves(visualizationNode.children[0].children, visualizationNode.children[1].children, 100);
+
+            const aiNode = root.descendants().find(d => d.data.name === "Artificial Intelligence");
+            adjustCurves(aiNode.children[0].children, aiNode.children[1].children, 100);
+
+            const spatialAnalysisNode = root.descendants().find(d => d.data.name === "Spatial Analysis");
+            adjustCurves(spatialAnalysisNode.children[0].children, spatialAnalysisNode.children[1].children, 100);
+
+            const web2Node = root.descendants().find(d => d.data.name === "Web 2");
+            adjustCurves(web2Node.children[0].children, web2Node.children[1].children, 100);
+        }, 7500); // Adjust the delay time as needed
+    </script>
+</body>
+</html>
