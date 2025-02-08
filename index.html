@@ -25,7 +25,7 @@
         }
 
         .node text {
-            font-size: 12px;
+            font-size: 10px; /* Reduced font size */
             fill: white;
         }
 
@@ -215,11 +215,16 @@
             .style("fill", d => colorScale(d.depth)); // Color nodes based on depth
 
         nodes.append("text")
-            .attr("dy", -20)
+            .attr("dy", -90) // Further increased negative value to position text above the nodes
             .attr("x", 0)
             .style("text-anchor", "middle")
-            .style("font-size", d => `${12 - d.depth * 1.5}px`)
-            .text(d => d.data.name);
+            .style("font-size", d => `${10 - d.depth}px`) // Further reduced font size
+            .selectAll("tspan")
+            .data(d => d.data.name.split(" ")) // Split names into words
+            .join("tspan")
+            .attr("x", 0)
+            .attr("dy", (d, i) => i ? "1.2em" : "-1.2em") // Adjust dy for the first tspan to move the entire block up
+            .text(d => d);
 
         // Animate nodes and links
         nodes.transition()
